@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Panels Project</title>
+    <style>
+        body {
+            background-color: #2c2f33;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            margin-top: 100px;
+        }
+        h1 {
+            color: #f5a623;
+        }
+        .upload-btn-wrapper {
+            margin-top: 50px;
+        }
+        button {
+            background-color: #7289da;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #99aab5;
+        }
+        .progress-container {
+            margin-top: 20px;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: #f5a623;
+            text-align: center;
+            line-height: 20px;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Solar Panels Project</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-btn-wrapper">
+                <input type="file" id="fileInput" name="file" accept="image/*" required>
+                <button type="submit">Upload and Predict</button>
+            </div>
+        </form>
+
+        <div class="progress-container">
+            <h3>Upload Progress</h3>
+            <div class="progress-bar" id="uploadProgressBar">0%</div>
+        </div>
+
+        <div class="progress-container">
+            <h3>Prediction Progress</h3>
+            <div class="progress-bar" id="predictProgressBar">0%</div>
+        </div>
+
+        <div id="result" style="margin-top: 50px;"></div>
+    </div>
+
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            var formData = new FormData();
+            var fileInput = document.getElementById("fileInput").files[0];
+            formData.append("file", fileInput);
+
+            var xhr = new XMLHttpRequest();
+
+            // Upload Progress
+            xhr.upload.addEventListener("progress", function(e) {
+                if (e.lengthComputable) {
+                    var percentComplete = Math.round((e.loaded / e.total) * 100);
+                    var progressBar = document.getElementById("uploadProgressBar");
+                    progressBar.style.width = percentComplete + "%";
+                    progressBar.textContent = percentComplete + "%";
+                }
+            });
+
+            // Response when upload completes and prediction starts
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    startPredictionProgress();
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        var resultDiv = document.getElementById("result");
+                        resultDiv.innerHTML = `<h2>Download Cropped Images:</h2>`;
+                        response.files.forEach(file => {
+                            resultDiv.innerHTML += `<a href="/download/${file}" download>${file}</a><br>`;
+                        });
+                    } else {
+                        alert("Prediction failed. Please try again.");
+                    }
+                }
+            };
+
+            // Start upload
+            xhr.open("POST", "/predict", true);
+            xhr.send(formData);
+        });
+
+        // Simulate Prediction Progress (this part is controlled by backend updates)
+        function startPredictionProgress() {
+            var progressBar = document.getElementById("predictProgressBar");
+            var width = 0;
+
+            var progressInterval = setInterval(function() {
+                if (width >= 100) {
+                    clearInterval(progressInterval);
+                } else {
+                    width += 10; // Increment progress (or adjust based on backend updates)
+                    progressBar.style.width = width + "%";
+                    progressBar.textContent = width + "%";
+                }
+            }, 1000); // Adjust interval based on the average model prediction time
+        }
+    </script>
+</body>
+</html>
